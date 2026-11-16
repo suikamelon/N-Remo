@@ -9,10 +9,10 @@
     <UseWPF>true</UseWPF>
 	  <UseWindowsForms>true</UseWindowsForms>
 	  <ApplicationIcon>Resources\NR-AppIcon.ico</ApplicationIcon>
-	  <Version>1.1</Version>
+	  <Version>1.1.0</Version>
 	  <AssemblyVersion>1.1.0.0</AssemblyVersion>
 	  <FileVersion>1.1.0.0</FileVersion>
-	  <InformationalVersion>1.1</InformationalVersion>
+	  <InformationalVersion>1.1.0</InformationalVersion>
 	  <WindowsPackageType>None</WindowsPackageType>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
@@ -20,6 +20,9 @@
 	  <EnableMsixTooling>true</EnableMsixTooling>
 	  <AssemblyTitle>N-Remo</AssemblyTitle>
 	  <Product>N-Remo</Product>
+	  <Authors>suikamelon</Authors>
+	  <Company>suikamelon</Company>
+	  <Copyright>Copyright © 2026 suikamelon</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

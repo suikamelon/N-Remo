@@ -99,5 +99,5 @@ dotnet publish N-Remo.csproj -c Release -r win-x64 --self-contained true -p:Publ
 
 N-Remoは[MIT License](LICENSE)で公開します。
 
-Copyright (c) 2026 suikamelonmikan
+Copyright (c) 2026 suikamelon
 

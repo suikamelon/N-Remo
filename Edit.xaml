@@ -1545,7 +1545,7 @@
                             <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Text="Nature Remo、SwitchBot、Tuyaおよび各製品名・商標は、それぞれの権利者に帰属します。"/>
-                            <TextBlock Margin="0,12,0,0" Text="Copyright © 2026 suikamelonmikan"/>
+                            <TextBlock Margin="0,12,0,0" Text="Copyright © 2026 suikamelon"/>
                             <TextBlock Text="MIT License"/>
                         </StackPanel>
                     </Border>
