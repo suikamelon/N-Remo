@@ -1,0 +1,45 @@
+name: 不具合報告
+description: N-Remoの不具合を報告します
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Token、Secret、Webhook URL、パスワード、個人情報を記載しないでください。"
+  - type: input
+    id: version
+    attributes:
+      label: N-Remoのバージョン
+      placeholder: 例：1.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: windows
+    attributes:
+      label: Windows
+      options:
+        - Windows 11
+        - Windows 10
+        - その他
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: 発生した問題
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+    validations:
+      required: true
+

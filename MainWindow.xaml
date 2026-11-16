@@ -1,0 +1,191 @@
+﻿<Window x:Class="N_Remo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:N_Remo"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Resources/NR-AppIcon.ico"
+        mc:Ignorable="d"
+        Title="N-Remo" Height="450" Width="540"
+        MinHeight="220" MinWidth="280">
+
+    <Window.Resources>
+        <Style x:Key="RoundedButtonStyle"
+       TargetType="{x:Type Button}">
+
+            <Setter Property="Background" Value="#1565C0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#0D47A1"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="10"
+                        RenderTransformOrigin="0.5,0.5">
+
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1"
+                                        ScaleY="1"/>
+                            </Border.RenderTransform>
+
+
+
+                            <TextBlock
+                                Text="{TemplateBinding Content}"
+                                TextWrapping="Wrap"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                Margin="{TemplateBinding Padding}"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <!-- マウスオーバー -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <!-- マウスが乗っている -->
+                                    <Condition Property="IsMouseOver"
+                                       Value="True"/>
+
+                                    <!-- エフェクトが有効 -->
+                                    <Condition
+                                        Property="local:ButtonEffects.IsMouseOverEffectEnabled"
+                                        Value="True"/>
+                                </MultiTrigger.Conditions>
+
+                                <Setter TargetName="ButtonBorder"
+                                    Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect
+                                            Color="Black"
+                                            BlurRadius="10"
+                                            ShadowDepth="4"
+                                            Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
+
+                                <MultiTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="ButtonBorder"
+                                                Storyboard.TargetProperty=
+                                                "(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                To="1.04"
+                                                Duration="0:0:0.12"/>
+
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="ButtonBorder"
+                                                Storyboard.TargetProperty=
+                                                "(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                To="1.04"
+                                                Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </MultiTrigger.EnterActions>
+
+                                <MultiTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="ButtonBorder"
+                                                Storyboard.TargetProperty=
+                                                "(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                To="1"
+                                                Duration="0:0:0.12"/>
+
+                                            <DoubleAnimation
+                                                Storyboard.TargetName="ButtonBorder"
+                                                Storyboard.TargetProperty=
+                                                "(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                To="1"
+                                                Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </MultiTrigger.ExitActions>
+                            </MultiTrigger>
+
+                            <!-- クリック中 -->
+                            <!-- クリックエフェクト -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed"
+                                       Value="True"/>
+
+                                    <Condition Property="local:ButtonEffects.IsMouseOverEffectEnabled"
+                                       Value="True"/>
+                                </MultiTrigger.Conditions>
+
+                                <Setter TargetName="ButtonBorder"
+                                    Property="Opacity"
+                                    Value="0.8"/>
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect
+                                            BlurRadius="6"
+                                            ShadowDepth="1"
+                                            Opacity="0.5"/>
+                                    </Setter.Value>
+                                </Setter>
+
+                                <Setter TargetName="ButtonBorder"
+                                    Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform
+                                            ScaleX="0.96"
+                                            ScaleY="0.96"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiTrigger>
+
+                            <Trigger Property="IsEnabled"
+                             Value="False">
+                                <Setter TargetName="ButtonBorder"
+                                Property="Opacity"
+                                Value="0.4"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Canvas x:Name="MainCanvas"
+            Background="#F3F3F3">
+
+            <!-- 背景を右クリックしたときのメニュー -->
+            <Canvas.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="⚙  設定"
+                              Click="SettingMenuItem_Click"/>
+
+                    <MenuItem Header="✎  ボタン編集"
+                              Click="EditMenuItem_Click"/>
+
+                    <MenuItem Header="▥  センサーログ"
+                              Click="SensorLogMenuItem_Click"/>
+
+                    <Separator/>
+
+                    <MenuItem Header="N-Remoを終了する"
+                              Click="ExitMenuItem_Click"/>
+                </ContextMenu>
+            </Canvas.ContextMenu>
+            
+
+        </Canvas>
+    </Grid>
+</Window>
