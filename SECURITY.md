@@ -1,5 +1,7 @@
 # Security Policy
 
+日本語 | [English](SECURITY.en.md)
+
 ## Supported versions
 
 原則として、GitHub Releasesで公開している最新安定版のみをサポートします。

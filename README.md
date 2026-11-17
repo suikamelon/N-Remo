@@ -1,5 +1,7 @@
 # N-Remo
 
+日本語 | [English](README.en.md)
+
 N-Remoは、Nature Remo、SwitchBot、Tuyaの機器をWindowsから操作するための非公式WPFアプリケーションです。ボタンを自由に配置し、各社のコマンド、センサー表示、ログ、簡易オートメーションを一つの画面で扱えます。
 
 > [!IMPORTANT]
@@ -94,6 +96,8 @@ dotnet publish N-Remo.csproj -c Release -r win-x64 --self-contained true -p:Publ
 [GitHub Issues](https://github.com/suikamelon/N-Remo/issues)へ登録してください。Token、Secret、Webhook URL、個人情報を含むログやスクリーンショットは投稿しないでください。
 
 セキュリティ上の問題は[SECURITY.md](SECURITY.md)に従って報告してください。
+
+プライバシーについては[PRIVACY.md](PRIVACY.md)を参照してください。
 
 ## ライセンス
 

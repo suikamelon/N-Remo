@@ -1,5 +1,7 @@
 # Privacy
 
+日本語 | [English](PRIVACY.en.md)
+
 N-RemoはデスクトップアプリケーションとしてユーザーのWindows環境で動作します。
 
 ## 取り扱う情報
