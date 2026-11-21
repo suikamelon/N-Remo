@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Markup;
 
 namespace N_Remo
 {
@@ -118,22 +119,42 @@ namespace N_Remo
             {
                 try
                 {
-                    return new ResourceDictionary
-                    {
-                        Source = new Uri(externalPath, UriKind.Absolute)
-                    };
+                    // Source代入だけでは解析が遅延し、呼び出し元のtry/catchを
+                    // 抜けた後にXAML例外が発生することがある。ここで強制的に
+                    // 読み込み、壊れた外部辞書を確実に検出する。
+                    using FileStream stream = File.OpenRead(externalPath);
+                    if (XamlReader.Load(stream) is ResourceDictionary dictionary)
+                        return dictionary;
                 }
-                catch
+                catch (Exception ex)
                 {
                     // 外部ファイルが壊れている場合は内蔵版を使用する。
+                    AutomationDiagnosticLog.Write(
+                        $"外部言語ファイルの読込失敗 ({language}): {ex.Message}");
                 }
             }
 
-            Uri resourceUri = new(
-                $"/N-Remo;component/Language/{language}.xaml",
-                UriKind.RelativeOrAbsolute);
-            return (ResourceDictionary)System.Windows.Application
-                .LoadComponent(resourceUri);
+            try
+            {
+                Uri resourceUri = new(
+                    $"/N-Remo;component/Language/{language}.xaml",
+                    UriKind.RelativeOrAbsolute);
+                return (ResourceDictionary)System.Windows.Application
+                    .LoadComponent(resourceUri);
+            }
+            catch (Exception ex) when (!string.Equals(
+                language, "ja-JP", StringComparison.OrdinalIgnoreCase))
+            {
+                // 内蔵英語辞書にも問題があっても起動不能にしない。
+                // 設定を日本語へ戻し、次回起動も安全な辞書を使用する。
+                AutomationDiagnosticLog.Write(
+                    $"内蔵言語ファイルの読込失敗 ({language})。日本語へ復旧: {ex}");
+                CurrentLanguage = "ja-JP";
+                Properties.Settings.Default.Language = "ja-JP";
+                Properties.Settings.Default.Save();
+                PersistentAppSettings.SaveFromProperties();
+                return LoadLanguageResources("ja-JP");
+            }
         }
 
         public static void Apply(Window window)

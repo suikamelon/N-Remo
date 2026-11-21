@@ -56,7 +56,21 @@ namespace N_Remo
                 PersistentAppSettings.SaveFromProperties();
             }
 
-            LanguageManager.Initialize(language);
+            try
+            {
+                LanguageManager.Initialize(language);
+            }
+            catch (Exception ex)
+            {
+                // 言語辞書の問題だけでアプリ全体を起動不能にしない。
+                AutomationDiagnosticLog.Write(
+                    $"起動時の言語初期化に失敗。日本語へ復旧: {ex}");
+                language = "ja-JP";
+                N_Remo.Properties.Settings.Default.Language = language;
+                N_Remo.Properties.Settings.Default.Save();
+                PersistentAppSettings.SaveFromProperties();
+                LanguageManager.Initialize(language);
+            }
 
             // ========================================
             // 引数付き起動：赤外線を送信して終了

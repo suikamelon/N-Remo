@@ -383,7 +383,6 @@
     <sys:String x:Key="緑">Green</sys:String>
     <sys:String x:Key="黄">Yellow</sys:String>
     <sys:String x:Key="風量：自動">Fan: Auto</sys:String>
-    <sys:String x:Key="状態">Status</sys:String>
     <sys:String x:Key="不明">Unknown</sys:String>
     <sys:String x:Key="風量">Fan speed</sys:String>
     <sys:String x:Key="自動">Auto</sys:String>
