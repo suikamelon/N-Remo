@@ -24,6 +24,8 @@
 	  <Authors>suikamelon</Authors>
 	  <Company>suikamelon</Company>
 	  <Copyright>Copyright © 2026 suikamelon</Copyright>
+	  <!-- 配布物をプロジェクト内に保管しても、次回発行へ再梱包しない。 -->
+	  <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
