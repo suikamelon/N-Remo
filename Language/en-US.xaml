@@ -359,7 +359,7 @@
     <sys:String x:Key="選択したコマンドを登録">Register selected commands</sys:String>
     <sys:String x:Key="登録するコマンドを選択してください。">Select commands to register.</sys:String>
     <sys:String x:Key="表示中: {0}件 / 選択中: {1}件">Displayed: {0} / Selected: {1}</sys:String>
-    <sys:String x:Key="{0}件を登録しました。">Registered {0} command(s).</sys:String>
+    <sys:String x:Key="{}{0}件を登録しました。">Registered {0} command(s).</sys:String>
     <sys:String x:Key="登録済みの{0}件は追加しませんでした。">Skipped {0} command(s) already registered.</sys:String>
     <sys:String x:Key="一部の提供元から取得できませんでした。">Commands could not be retrieved from some providers.</sys:String>
     <sys:String x:Key="エアコン操作">Air conditioner control</sys:String>
@@ -375,7 +375,7 @@
     <sys:String x:Key="選択デバイスをパネル追加">Add selected device panel</sys:String>
     <sys:String x:Key="デバイスパネル">Device panel</sys:String>
     <sys:String x:Key="パネルを追加するデバイスを選択してください。">Select a device to add as a panel.</sys:String>
-    <sys:String x:Key="{0}のデバイスパネルを追加しました。">Added a device panel for {0}.</sys:String>
+    <sys:String x:Key="{}{0}のデバイスパネルを追加しました。">Added a device panel for {0}.</sys:String>
     <sys:String x:Key="現在、専用パネルを追加できるのはエアコン、テレビ、プラグです。">Dedicated panels are currently available for air conditioners, televisions, and plugs.</sys:String>
     <sys:String x:Key="この操作には対応していません。">This operation is not supported.</sys:String>
     <sys:String x:Key="青">Blue</sys:String>
