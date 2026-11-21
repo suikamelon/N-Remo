@@ -270,13 +270,14 @@
 
 
                 <Button x:Name="MouseOverEffectButton" Content="マウスオーバー装飾ONOFF" Height="25" Margin="0,389,25,0" VerticalAlignment="Top" Click="MouseOverEffectButton_Click" FontSize="10" HorizontalAlignment="Right" Width="126" Grid.Column="1"/>
+                <Button x:Name="DevicePanelThemeButton" Content="パネル：ライト" Height="25" Margin="0,389,25,0" VerticalAlignment="Top" Click="DevicePanelThemeButton_Click" FontSize="10" HorizontalAlignment="Right" Width="126" Grid.Column="1" Visibility="Collapsed"/>
                 <Button Content="デスクトップにショートカット作成" Height="25" Margin="0,646,13,0" VerticalAlignment="Top" Click="CreateShortcutButton_Click" FontSize="10" HorizontalAlignment="Right" Width="157" Grid.ColumnSpan="2" Style="{StaticResource EditPrimaryButtonStyle}"/>
                 <Button x:Name="ButtonFontWeightToggle" Content="太字" Height="25" Margin="0,360,94,0" VerticalAlignment="Top" Click="ButtonFontWeightToggle_Click" FontSize="10" Grid.ColumnSpan="2" HorizontalAlignment="Right" Width="76"/>
 
             </Grid>
         </TabItem>
 
-        <TabItem Header="サーバーコマンド">
+        <TabItem x:Name="ServerCommandTab" Header="サーバーコマンド">
             <Grid Margin="18">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -286,6 +287,10 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -293,18 +298,23 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="サーバーコマンド" FontSize="20" FontWeight="SemiBold"
-                         VerticalAlignment="Center"/>
-                        <TextBlock Text="Nature Remo(コマンドのみ)、SwitchBot、Tuyaからコマンド・シーンを取得します。"
-                         Foreground="{StaticResource TextSecondaryBrush}"
-                         Margin="14,3,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <TextBlock Grid.Row="0" Text="サーバーコマンド" FontSize="20"
+                     FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="8"
+                     Text="Nature Remo(コマンドのみ)、SwitchBot、Tuyaからコマンド・シーンを取得します。"
+                     Foreground="{StaticResource TextSecondaryBrush}"
+                     Margin="0,5,0,0" VerticalAlignment="Center"/>
                     <Button Grid.Column="1" Content="送信テスト" Height="25"
                     Click="TestSwitchBotCommand_Click"/>
                     <Button Grid.Column="3" Content="コマンドを更新" Height="25"
                     Click="RefreshSwitchBotDevices_Click"/>
+                    <Button Grid.Column="5" Content="デバイス別一括登録" Height="25"
+                    Click="BatchRegisterServerCommands_Click"/>
+                    <Button Grid.Column="7" Content="選択デバイスをパネル追加" Height="25"
+                    Click="AddSelectedDevicePanel_Click"/>
                 </Grid>
 
                 <DataGrid x:Name="DataGridSwitchBotCommands" Grid.Row="2"
@@ -380,7 +390,7 @@
             </Grid>
         </TabItem>
 
-        <TabItem Header="サーバーセンサー">
+        <TabItem x:Name="ServerSensorTab" Header="サーバーセンサー">
             <Grid Margin="18">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1524,8 +1534,11 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="Resources/NR-AppIcon.ico" Width="64" Height="64"
-                               Margin="0,0,18,0"/>
+                        <Image Source="/Resources/N-AppIcon.png" Width="64" Height="64"
+                               Margin="0,0,18,0"
+                               Stretch="Uniform"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="N-Remo" FontSize="28" FontWeight="SemiBold"/>
                             <TextBlock x:Name="TextBlockAboutVersion" FontSize="14"

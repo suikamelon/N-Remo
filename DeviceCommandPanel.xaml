@@ -1,0 +1,204 @@
+<UserControl x:Class="N_Remo.DeviceCommandPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="180" MinHeight="120">
+    <Border x:Name="PanelBorder" CornerRadius="14" Background="#FFE5E5E5"
+            BorderThickness="0" Padding="14">
+        <!-- 操作段の間を可変余白にして、縦長・横長のパネルでも全面を使う。 -->
+        <Grid x:Name="DesignSurface">
+            <Grid x:Name="AirConditionerPanel">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="AirConditionerTitle" FontSize="16"
+                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="AirPowerComboBox" Height="22"
+                              DisplayMemberPath="Display" SelectedValuePath="Value"
+                              SelectionChanged="AirPowerComboBox_SelectionChanged"/>
+                    <ComboBox x:Name="AirModeComboBox" Grid.Column="2" Height="22"
+                              DisplayMemberPath="Display" SelectedValuePath="Value"
+                              SelectionChanged="AirModeComboBox_SelectionChanged"/>
+                </Grid>
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="48"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="温度" VerticalAlignment="Center"/>
+                    <Slider x:Name="AirTemperatureSlider" Grid.Column="2"
+                            Minimum="16" Maximum="30" TickFrequency="1"
+                            IsSnapToTickEnabled="True" Value="26"
+                            ValueChanged="AirTemperatureSlider_ValueChanged"/>
+                    <TextBlock x:Name="AirTemperatureText" Grid.Column="3"
+                               Text="26℃" HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                </Grid>
+                <Grid Grid.Row="6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="風量" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="AirFanComboBox" Grid.Column="2" Height="22"
+                              DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                </Grid>
+                <Button x:Name="AirSendButton" Grid.Row="8" Content="送信"
+                        Height="26" Click="AirSendButton_Click"/>
+            </Grid>
+
+            <Grid x:Name="PlugPanel" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="PlugTitle" FontSize="16"
+                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="PlugStatusText" Grid.Row="2"
+                           Text="状態：不明" HorizontalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="PlugOnButton" Content="オン" Height="30"
+                            Click="PlugOnButton_Click"/>
+                    <Button x:Name="PlugOffButton" Grid.Column="2" Content="オフ"
+                            Height="30" Click="PlugOffButton_Click"/>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="TvPanel" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="TvTitle" FontSize="16" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis"/>
+                <UniformGrid Grid.Row="2" Columns="3">
+                    <Button x:Name="TvPowerButton" Content="電源" Tag="Power"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvInputButton" Content="入力" Tag="Input"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvMuteButton" Content="消音" Tag="Mute"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                </UniformGrid>
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="チャンネル" HorizontalAlignment="Center"/>
+                        <UniformGrid Columns="2">
+                            <Button x:Name="TvChannelDownButton" Content="－" Tag="ChannelDown"
+                                    Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                            <Button x:Name="TvChannelUpButton" Content="＋" Tag="ChannelUp"
+                                    Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                        </UniformGrid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="音量" HorizontalAlignment="Center"/>
+                        <UniformGrid Columns="2">
+                            <Button x:Name="TvVolumeDownButton" Content="－" Tag="VolumeDown"
+                                    Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                            <Button x:Name="TvVolumeUpButton" Content="＋" Tag="VolumeUp"
+                                    Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                        </UniformGrid>
+                    </StackPanel>
+                </Grid>
+                <Grid Grid.Row="6" HorizontalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="28"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="42"/>
+                        <ColumnDefinition Width="42"/>
+                        <ColumnDefinition Width="42"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="TvUpButton" Grid.Column="1" Content="▲" Tag="Up"
+                            Margin="2" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvLeftButton" Grid.Row="1" Content="◀" Tag="Left"
+                            Margin="2" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvOkButton" Grid.Row="1" Grid.Column="1" Content="OK" Tag="Ok"
+                            Margin="2" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvRightButton" Grid.Row="1" Grid.Column="2" Content="▶" Tag="Right"
+                            Margin="2" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvDownButton" Grid.Row="2" Grid.Column="1" Content="▼" Tag="Down"
+                            Margin="2" Click="TvCommandButton_Click"/>
+                </Grid>
+                <UniformGrid Grid.Row="10" Columns="3">
+                    <Button Content="1" Tag="Channel1" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="2" Tag="Channel2" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="3" Tag="Channel3" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="4" Tag="Channel4" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="5" Tag="Channel5" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="6" Tag="Channel6" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="7" Tag="Channel7" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="8" Tag="Channel8" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="9" Tag="Channel9" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="10" Tag="Channel10" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="11" Tag="Channel11" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button Content="12" Tag="Channel12" Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                </UniformGrid>
+                <UniformGrid Grid.Row="12" Columns="4">
+                    <Button x:Name="TvBlueButton" Content="青" Tag="Blue"
+                            Background="#FF2563EB" Foreground="White"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvRedButton" Content="赤" Tag="Red"
+                            Background="#FFDC2626" Foreground="White"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvGreenButton" Content="緑" Tag="Green"
+                            Background="#FF16A34A" Foreground="White"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvYellowButton" Content="黄" Tag="Yellow"
+                            Background="#FFFACC15" Foreground="Black"
+                            Margin="2" Height="28" Click="TvCommandButton_Click"/>
+                </UniformGrid>
+                <UniformGrid Grid.Row="8" Columns="3">
+                    <Button x:Name="TvBackButton" Content="戻る" Tag="Back"
+                            Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvHomeButton" Content="ホーム" Tag="Home"
+                            Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                    <Button x:Name="TvMenuButton" Content="メニュー" Tag="Menu"
+                            Margin="2" Height="27" Click="TvCommandButton_Click"/>
+                </UniformGrid>
+            </Grid>
+            </Grid>
+    </Border>
+</UserControl>

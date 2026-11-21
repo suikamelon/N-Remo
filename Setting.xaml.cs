@@ -1032,8 +1032,15 @@ namespace N_Remo
             if (dialog.ShowDialog() != WinForms.DialogResult.OK)
                 return;
 
-            System.Windows.MessageBoxResult result =
-                System.Windows.MessageBox.Show(
+            Window? ownerWindow = Window.GetWindow(this);
+            System.Windows.MessageBoxResult result = ownerWindow != null
+                ? System.Windows.MessageBox.Show(
+                    ownerWindow,
+                    "現在のボタンデータと設定を置き換えますか？",
+                    "インポート",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning)
+                : System.Windows.MessageBox.Show(
                     "現在のボタンデータと設定を置き換えますか？",
                     "インポート",
                     MessageBoxButton.YesNo,
@@ -1044,38 +1051,68 @@ namespace N_Remo
 
             // インポート前の画面内容で、復元したDBを終了時に上書きしない。
             suppressSettingsSaveOnClose = true;
+            System.Windows.Controls.Button? importButton =
+                sender as System.Windows.Controls.Button;
+            if (importButton != null)
+                importButton.IsEnabled = false;
+            System.Windows.Input.Mouse.OverrideCursor =
+                System.Windows.Input.Cursors.Wait;
 
             try
             {
                 await mainWindow.ImportApplicationBackupAsync(
                     dialog.FileName);
 
-                System.Windows.MessageBox.Show(
-                    "データベースと設定をインポートしました。",
-                    "インポート",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                // ImportApplicationBackupAsyncの終了時に再開された15秒周期の
+                // オートメーション判定が、完了ダイアログ表示中にAPI更新を
+                // 開始するとOK操作まで止まるため、通知を閉じるまで停止する。
+                mainWindow.SuspendRuntimeTimersForModalDialog();
 
-                // Close時にインポート前の入力欄で
-                // 復元済み設定を上書きしない。
-                mainWindow.CloseEditWindow();
+                // 完了ダイアログより先に、インポート結果を画面へ反映する。
+                // 以前はダイアログのOK後にこの処理を行っていたため、
+                // OKを押してから長時間フリーズしたように見えていた。
+                Properties.Settings.Default.Reload();
+                ReloadSettingControls();
+                ownerWindow = Window.GetWindow(this);
+                if (ownerWindow is Edit edit)
+                    edit.ReloadAfterImport();
 
-                // 単独ウインドウとして使用している旧経路だけ閉じる。
-                // Editへ統合済みの場合は、Edit側の終了処理に任せる。
-                if (!isHostedInEdit)
-                    Close();
+                mainWindow.LoadBackgroundColor();
+                suppressSettingsSaveOnClose = false;
 
-                // Settingが閉じた後の描画タイミングで再反映
-                _ = mainWindow.Dispatcher.BeginInvoke(
-                    new Action(() =>
-                    {
-                        Properties.Settings.Default.Reload();
+                // ObservableCollectionの変更で予約されたDataGridの再配置・描画も
+                // 完了させてから通知する。OK後には重いUI処理を残さない。
+                if (ownerWindow != null)
+                {
+                    await ownerWindow.Dispatcher.InvokeAsync(
+                        () => { },
+                        System.Windows.Threading.DispatcherPriority.ContextIdle);
+                }
 
-                        mainWindow.LoadBackgroundColor();
-                        mainWindow.UpdateLayout();
-                    }),
-                    System.Windows.Threading
-                        .DispatcherPriority.ApplicationIdle);
+                // 待機状態のままモーダル画面を開くと、親画面との間で
+                // フォーカスが安定しないため、通知の直前に通常状態へ戻す。
+                System.Windows.Input.Mouse.OverrideCursor = null;
+                if (importButton != null)
+                    importButton.IsEnabled = true;
+
+                if (ownerWindow != null)
+                {
+                    ownerWindow.Activate();
+                    System.Windows.MessageBox.Show(
+                        ownerWindow,
+                        "データベースと設定をインポートしました。",
+                        "インポート",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show(
+                        "データベースと設定をインポートしました。",
+                        "インポート",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -1085,6 +1122,18 @@ namespace N_Remo
                     "エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+            finally
+            {
+                // MessageBoxが閉じた直後の同じクリック処理内で画面更新を
+                // 実行すると、閉じたダイアログが再描画されず残って見える。
+                // イベント処理を終了してから軽量なタイマー再開だけを行う。
+                _ = mainWindow.Dispatcher.BeginInvoke(
+                    new Action(mainWindow.ResumeRuntimeTimersAfterModalDialog),
+                    System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                System.Windows.Input.Mouse.OverrideCursor = null;
+                if (importButton != null)
+                    importButton.IsEnabled = true;
             }
         }
 
@@ -1125,6 +1174,15 @@ namespace N_Remo
                 PasswordBoxSwitchBotSecret.Password =
                     Properties.Settings.Default.SwitchBotSecret;
 
+                TextBoxTuyaAccessId.Text =
+                    Properties.Settings.Default.TuyaAccessId;
+
+                PasswordBoxTuyaAccessSecret.Password =
+                    Properties.Settings.Default.TuyaAccessSecret;
+
+                ComboBoxTuyaEndpoint.SelectedValue =
+                    Properties.Settings.Default.TuyaEndpoint;
+
                 TextBoxWidth.Text =
                     Properties.Settings.Default
                         .MainWindowWidth.ToString();
@@ -1161,6 +1219,9 @@ namespace N_Remo
                 ComboBoxMouseGesture.SelectedValue =
                     Properties.Settings.Default
                         .MouseGestureAction;
+
+                ComboBoxLanguage.SelectedValue =
+                    Properties.Settings.Default.Language;
             }
             finally
             {

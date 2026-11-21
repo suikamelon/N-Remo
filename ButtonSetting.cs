@@ -11,6 +11,22 @@ namespace N_Remo
 
         public string NameContent { get; set; } = "";
 
+        // 通常ボタンとの後方互換性を保ちながら、メイン画面へ
+        // 操作パネルを配置するための種別。
+        public string ItemType { get; set; } = "Button";
+
+        public string PanelType { get; set; } = "";
+
+        public string PanelTheme { get; set; } = "Light";
+
+        public string PanelAirPower { get; set; } = "on";
+
+        public string PanelAirMode { get; set; } = "cool";
+
+        public int PanelAirTemperature { get; set; } = 26;
+
+        public string PanelAirFan { get; set; } = "";
+
         public double Top { get; set; }
 
         public double Left { get; set; }

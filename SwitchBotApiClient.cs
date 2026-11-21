@@ -245,7 +245,11 @@ namespace N_Remo
                 .SelectMany(device => GetCommands(device).Select(command =>
                     new SwitchBotCommandItem
                     {
-                        Id = $"{device.DeviceId}|{command.Command}|{command.CommandType}",
+                        Id = $"{device.DeviceId}|{command.Command}|{command.CommandType}" +
+                            (string.Equals(command.Parameter, "default",
+                                StringComparison.OrdinalIgnoreCase)
+                                ? ""
+                                : $"|{command.Parameter}"),
                         Provider = "SwitchBot",
                         SourceDisplay = "SwitchBotコマンド",
                         DeviceId = device.DeviceId,
@@ -501,8 +505,30 @@ namespace N_Remo
                 yield break;
             }
 
-            if (type.Contains("tv") || type.Contains("air conditioner") ||
-                type.Contains("light") || type.Contains("fan") ||
+            if (type.Contains("air conditioner"))
+            {
+                // 温度別の大量コマンドではなく、メイン画面のボタンから
+                // 運転内容を選べる専用パネルを1件だけ登録する。
+                yield return (
+                    "openAirconControl",
+                    "default",
+                    "aircon-control",
+                    "エアコン操作パネル");
+                yield break;
+            }
+
+            if (type.Contains("tv"))
+            {
+                yield return ("turnOn", "default", "command", "オン");
+                yield return ("turnOff", "default", "command", "オフ");
+                yield return ("volumeAdd", "default", "command", "音量＋");
+                yield return ("volumeSub", "default", "command", "音量－");
+                yield return ("channelAdd", "default", "command", "チャンネル＋");
+                yield return ("channelSub", "default", "command", "チャンネル－");
+                yield break;
+            }
+
+            if (type.Contains("light") || type.Contains("fan") ||
                 type.Contains("plug") || type.Contains("humidifier") ||
                 type.Contains("purifier") || type.Contains("heater"))
             {

@@ -95,22 +95,12 @@ namespace N_Remo
                     "AC",
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    commands.Add(CreateCommand(
-                        $"NatureRemoCloud|aircon|{applianceId}|power-on",
+                    AddAirconSettingCommands(
+                        appliance,
                         applianceId,
                         applianceName,
                         applianceType,
-                        "power-on",
-                        "aircon",
-                        "電源オン"));
-                    commands.Add(CreateCommand(
-                        $"NatureRemoCloud|aircon|{applianceId}|power-off",
-                        applianceId,
-                        applianceName,
-                        applianceType,
-                        "power-off",
-                        "aircon",
-                        "電源オフ"));
+                        commands);
                 }
             }
 
@@ -219,7 +209,8 @@ namespace N_Remo
         public static async Task SendCommandAsync(
             string targetId,
             string command,
-            string commandType)
+            string commandType,
+            string parameter = "default")
         {
             string token = GetToken();
             string path;
@@ -235,6 +226,10 @@ namespace N_Remo
                 case "aircon":
                     path = $"appliances/{Uri.EscapeDataString(targetId)}/aircon_settings";
                     content = CreateFormContent("button", command);
+                    break;
+                case "aircon-settings":
+                    path = $"appliances/{Uri.EscapeDataString(targetId)}/aircon_settings";
+                    content = CreateAirconSettingsContent(parameter);
                     break;
                 default:
                     path = $"signals/{Uri.EscapeDataString(targetId)}/send";
@@ -271,6 +266,116 @@ namespace N_Remo
                 {
                     new KeyValuePair<string, string>(name, value)
                 });
+        }
+
+        private static FormUrlEncodedContent CreateAirconSettingsContent(
+            string parameter)
+        {
+            if (string.IsNullOrWhiteSpace(parameter) ||
+                string.Equals(parameter, "default", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Nature Remoエアコンの設定値がありません。");
+            }
+
+            using JsonDocument document = JsonDocument.Parse(parameter);
+            List<KeyValuePair<string, string>> values = new();
+            foreach (string name in new[]
+            {
+                "operation_mode", "temperature", "air_volume",
+                "air_direction", "button"
+            })
+            {
+                if (document.RootElement.TryGetProperty(name, out JsonElement value) &&
+                    value.ValueKind == JsonValueKind.String &&
+                    !string.IsNullOrWhiteSpace(value.GetString()))
+                {
+                    values.Add(new KeyValuePair<string, string>(
+                        name,
+                        value.GetString() ?? ""));
+                }
+            }
+
+            if (!values.Any(pair => pair.Key == "operation_mode"))
+            {
+                throw new InvalidOperationException(
+                    "Nature Remoエアコンの運転モードがありません。");
+            }
+            return new FormUrlEncodedContent(values);
+        }
+
+        private static void AddAirconSettingCommands(
+            JsonElement appliance,
+            string applianceId,
+            string applianceName,
+            string applianceType,
+            ICollection<SwitchBotCommandItem> commands)
+        {
+            if (!appliance.TryGetProperty("aircon", out JsonElement aircon) ||
+                !aircon.TryGetProperty("range", out JsonElement range) ||
+                !range.TryGetProperty("modes", out JsonElement modes) ||
+                modes.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+
+            List<string> supportedModes = modes.EnumerateObject()
+                .Select(property => property.Name)
+                .Where(mode => mode.Equals("cool", StringComparison.OrdinalIgnoreCase) ||
+                    mode.Equals("warm", StringComparison.OrdinalIgnoreCase) ||
+                    mode.Equals("heat", StringComparison.OrdinalIgnoreCase) ||
+                    mode.Equals("dry", StringComparison.OrdinalIgnoreCase) ||
+                    mode.Equals("blow", StringComparison.OrdinalIgnoreCase) ||
+                    mode.Equals("fan", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (supportedModes.Count == 0)
+            {
+                supportedModes.AddRange(new[] { "cool", "warm", "dry", "blow" });
+            }
+            Dictionary<string, List<string>> volumesByMode = new(
+                StringComparer.OrdinalIgnoreCase);
+            foreach (JsonProperty modeProperty in modes.EnumerateObject())
+            {
+                List<string> volumes = GetStringArray(modeProperty.Value, "vol");
+                if (volumes.Count > 0)
+                    volumesByMode[modeProperty.Name] = volumes;
+            }
+            string parameter = JsonSerializer.Serialize(new
+            {
+                supportedModes,
+                volumesByMode
+            });
+            commands.Add(new SwitchBotCommandItem
+            {
+                Id = $"NatureRemoCloud|aircon-control|{applianceId}",
+                Provider = "NatureRemoCloud",
+                SourceDisplay = "Nature Remoコマンド",
+                DeviceId = applianceId,
+                DeviceName = applianceName,
+                DeviceType = string.IsNullOrWhiteSpace(applianceType)
+                    ? "AC"
+                    : applianceType,
+                Command = "openAirconControl",
+                Parameter = parameter,
+                CommandType = "aircon-control",
+                Description = "エアコン操作パネル"
+            });
+        }
+
+        private static List<string> GetStringArray(
+            JsonElement element,
+            string propertyName)
+        {
+            if (!element.TryGetProperty(propertyName, out JsonElement values) ||
+                values.ValueKind != JsonValueKind.Array)
+                return new List<string>();
+            return values.EnumerateArray()
+                .Select(value => value.ValueKind == JsonValueKind.String
+                    ? value.GetString() ?? ""
+                    : value.ToString())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private static void AddApplianceButtons(

@@ -9,10 +9,11 @@
     <UseWPF>true</UseWPF>
 	  <UseWindowsForms>true</UseWindowsForms>
 	  <ApplicationIcon>Resources\NR-AppIcon.ico</ApplicationIcon>
-	  <Version>1.1.0</Version>
-	  <AssemblyVersion>1.1.0.0</AssemblyVersion>
-	  <FileVersion>1.1.0.0</FileVersion>
-	  <InformationalVersion>1.1.0</InformationalVersion>
+	  <Version>1.1.1</Version>
+	  <AssemblyVersion>1.1.1.0</AssemblyVersion>
+	  <FileVersion>1.1.1.0</FileVersion>
+	  <InformationalVersion>1.1.1</InformationalVersion>
+	  <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 	  <WindowsPackageType>None</WindowsPackageType>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
@@ -28,6 +29,7 @@
   <ItemGroup>
     <None Remove="NR-AppIcon.ico" />
     <None Remove="Resources\NR-AppIcon.ico" />
+    <None Remove="Resources\N-AppIcon.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +42,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\NR-AppIcon.ico" />
+    <Resource Include="Resources\N-AppIcon.png" />
   </ItemGroup>
 
   <ItemGroup>

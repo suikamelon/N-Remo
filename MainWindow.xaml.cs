@@ -83,6 +83,36 @@ namespace N_Remo
             }
 
             if (string.Equals(
+                setting.SwitchBotCommandType,
+                "aircon-control",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                SwitchBotCommandItem panelCommand = new()
+                {
+                    Id = $"{setting.Provider}|aircon-control|" +
+                        setting.SwitchBotDeviceId,
+                    Provider = setting.Provider,
+                    SourceDisplay = string.Equals(
+                        setting.Provider,
+                        "NatureRemoCloud",
+                        StringComparison.OrdinalIgnoreCase)
+                            ? "Nature Remoコマンド"
+                            : "SwitchBotコマンド",
+                    DeviceId = setting.SwitchBotDeviceId,
+                    DeviceName = setting.SwitchBotDeviceName,
+                    DeviceType = "Air Conditioner",
+                    Command = setting.SwitchBotCommand,
+                    Parameter = setting.SwitchBotParameter,
+                    CommandType = setting.SwitchBotCommandType,
+                    Description = "エアコン操作パネル"
+                };
+                AirConditionerControlWindow.ShowForCommand(
+                    panelCommand,
+                    System.Windows.Application.Current?.MainWindow);
+                return;
+            }
+
+            if (string.Equals(
                     setting.Provider,
                     "SwitchBot",
                     StringComparison.OrdinalIgnoreCase))
@@ -120,7 +150,8 @@ namespace N_Remo
                 await NatureRemoCloudApiClient.SendCommandAsync(
                     setting.SwitchBotDeviceId,
                     setting.SwitchBotCommand,
-                    setting.SwitchBotCommandType);
+                    setting.SwitchBotCommandType,
+                    setting.SwitchBotParameter);
                 return;
             }
 
@@ -249,6 +280,7 @@ namespace N_Remo
         private bool isReallyClosing;
         private bool isResettingAllData;
         private bool isImportingApplicationBackup;
+        private bool isRuntimeModalDialogOpen;
         private bool balloonTipShown;
         private DateTime closeWhenDeactivatedReadyAt = DateTime.MaxValue;
         private readonly DispatcherTimer serverSensorTimer = new();
@@ -458,6 +490,14 @@ namespace N_Remo
             System.Windows.Application.Current.Shutdown();
         }
 
+        internal void DevicePanelCommandCompleted()
+        {
+            _ = RefreshServerSensorsAfterCommandAsync();
+
+            if (Properties.Settings.Default.CloseAfterButtonClick)
+                CloseAfterButtonClick();
+        }
+
         // ========================================
         // ボタンを削除する処理
         // ========================================
@@ -521,6 +561,114 @@ namespace N_Remo
             NotifyButtonStateChanged(setting.Name);
 
             return setting;
+        }
+
+        public ButtonSetting AddDevicePanel(SwitchBotCommandItem command)
+        {
+            string deviceType = command.DeviceType?.Trim() ?? "";
+            string panelType = deviceType.Contains("air conditioner",
+                    StringComparison.OrdinalIgnoreCase) ||
+                deviceType.Equals("AC", StringComparison.OrdinalIgnoreCase)
+                    ? "AirConditioner"
+                    : deviceType.Contains("tv", StringComparison.OrdinalIgnoreCase) ||
+                      deviceType.Contains("television", StringComparison.OrdinalIgnoreCase)
+                        ? "TV"
+                    : deviceType.Contains("plug", StringComparison.OrdinalIgnoreCase) ||
+                      command.CommandType.Equals("Boolean",
+                          StringComparison.OrdinalIgnoreCase)
+                        ? "Plug"
+                        : "";
+            if (string.IsNullOrWhiteSpace(panelType))
+            {
+                throw new InvalidOperationException(
+                    "現在、専用パネルを追加できるのはエアコン、テレビ、プラグです。");
+            }
+
+            ButtonSetting? existing = database.LoadAll().FirstOrDefault(setting =>
+                string.Equals(setting.ItemType, "DevicePanel",
+                    StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(setting.Provider, command.Provider,
+                    StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(setting.SwitchBotDeviceId, command.DeviceId,
+                    StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                throw new InvalidOperationException(
+                    $"{command.DeviceName}のパネルは既に追加されています。");
+            }
+
+            int maximumZIndex = MainCanvas.Children.OfType<UIElement>()
+                .Select(System.Windows.Controls.Panel.GetZIndex)
+                .DefaultIfEmpty(0).Max();
+            string buttonName = CreateNextButtonName();
+            ButtonSetting setting = new()
+            {
+                Name = buttonName,
+                NameContent = string.IsNullOrWhiteSpace(command.DeviceName)
+                    ? "デバイス"
+                    : command.DeviceName,
+                ItemType = "DevicePanel",
+                PanelType = panelType,
+                PanelTheme = "Light",
+                PanelAirPower = "on",
+                PanelAirMode = "cool",
+                PanelAirTemperature = 26,
+                PanelAirFan = "",
+                IsVisible = true,
+                Left = 20,
+                Top = 20,
+                Width = panelType == "AirConditioner" ? 310 :
+                    panelType == "TV" ? 310 : 220,
+                Height = panelType == "AirConditioner" ? 255 :
+                    panelType == "TV" ? 490 : 150,
+                FontSize = 12,
+                FontColor = "#FF000000",
+                FontWeight = "Normal",
+                BackgroundColor = "#FFE0E0E0",
+                HorizontalAlignment = "Center",
+                VerticalAlignment = "Center",
+                IsMouseOverEffectEnabled = false,
+                ZIndex = maximumZIndex + 1,
+                Provider = command.Provider,
+                SwitchBotDeviceId = command.DeviceId,
+                SwitchBotDeviceName = command.DeviceName,
+                SwitchBotCommand = command.Command,
+                SwitchBotParameter = command.Parameter,
+                SwitchBotCommandType = command.CommandType
+            };
+            database.Save(setting);
+            CreateButton(setting);
+            NotifyButtonStateChanged(setting.Name);
+            return setting;
+        }
+
+        public void RefreshDevicePanelDefinitions(
+            IEnumerable<SwitchBotCommandItem> commands)
+        {
+            Dictionary<string, SwitchBotCommandItem> definitions = commands
+                .Where(command => !string.IsNullOrWhiteSpace(command.DeviceId))
+                .GroupBy(command => $"{command.Provider}|{command.DeviceId}",
+                    StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group =>
+                    group.FirstOrDefault(command => string.Equals(
+                        command.CommandType,
+                        "aircon-control",
+                        StringComparison.OrdinalIgnoreCase)) ?? group.First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (ButtonSetting panel in database.LoadAll().Where(setting =>
+                string.Equals(setting.ItemType, "DevicePanel",
+                    StringComparison.OrdinalIgnoreCase)))
+            {
+                string key = $"{panel.Provider}|{panel.SwitchBotDeviceId}";
+                if (!definitions.TryGetValue(key, out SwitchBotCommandItem? command))
+                    continue;
+                panel.SwitchBotCommand = command.Command;
+                panel.SwitchBotParameter = command.Parameter;
+                panel.SwitchBotCommandType = command.CommandType;
+                database.Save(panel);
+                ApplyButtonSetting(panel);
+            }
         }
 
         // ========================================
@@ -1315,6 +1463,14 @@ namespace N_Remo
         // ========================================
         private async void Button_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (sender is System.Windows.Controls.Button panelHost &&
+                editWindow == null &&
+                panelHost.Content is DeviceCommandPanel)
+            {
+                // 通常表示中はパネル内部の操作部品へクリックを渡す。
+                return;
+            }
+
             // Editが開いていない場合
             if (editWindow == null)
             {
@@ -1713,6 +1869,31 @@ namespace N_Remo
                 ApplyServerSensorValues();
         }
 
+        /// <summary>
+        /// モーダル通知の表示中にDispatcherTimerがUIスレッドへ割り込み、
+        /// ダイアログのボタン操作を長時間止めないよう一時停止する。
+        /// </summary>
+        public void SuspendRuntimeTimersForModalDialog()
+        {
+            isRuntimeModalDialogOpen = true;
+            serverSensorTimer.Stop();
+            automationScheduleTimer.Stop();
+            AutomationDiagnosticLog.Write("インポート完了通知を表示。自動処理を一時停止。");
+        }
+
+        /// <summary>
+        /// モーダル通知を閉じた後、現在の設定に従って定期処理を再開する。
+        /// </summary>
+        public void ResumeRuntimeTimersAfterModalDialog()
+        {
+            isRuntimeModalDialogOpen = false;
+            // インポート処理内ですでに最新値を取得・反映済みなので、
+            // ダイアログを閉じた直後に全ボタンを再走査しない。
+            ReloadServerSensorSettingsAndRefresh(useCachedValues: false);
+            automationScheduleTimer.Start();
+            AutomationDiagnosticLog.Write("インポート完了通知を終了。自動処理を再開。");
+        }
+
         public void ReloadWebhookRelaySettings()
         {
             webhookRealtimeCancellation?.Cancel();
@@ -1771,6 +1952,9 @@ namespace N_Remo
 
         private async Task ProcessWebhookRealtimeEventAsync(WebhookRelayEvent relayEvent)
         {
+            if (isRuntimeModalDialogOpen)
+                return;
+
             if (relayEvent.Id > 0 &&
                 relayEvent.Id <= Properties.Settings.Default.WebhookLastEventId)
                 return;
@@ -1807,7 +1991,7 @@ namespace N_Remo
             bool switchBotOnly = false,
             bool discardStaleValues = false)
         {
-            if (isRefreshingServerSensors)
+            if (isRuntimeModalDialogOpen || isRefreshingServerSensors)
                 return;
             isRefreshingServerSensors = true;
             try
@@ -1927,7 +2111,7 @@ namespace N_Remo
             IEnumerable<ServerSensorItem>? currentSensors = null,
             bool allowWithoutSensorUpdates = false)
         {
-            if (isImportingApplicationBackup)
+            if (isImportingApplicationBackup || isRuntimeModalDialogOpen)
                 return;
 
             await automationEvaluationLock.WaitAsync();
@@ -2445,11 +2629,19 @@ namespace N_Remo
                     StringComparison.Ordinal)) ??
                 throw new InvalidOperationException(
                     $"実行するコマンドが見つかりません: {commandId}");
+            if (string.Equals(command.CommandType, "aircon-control",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "エアコン操作パネルは簡易オートメーションから実行できません。" +
+                    "固定したエアコンコマンドを使用してください。");
+            }
             switch (command.Provider)
             {
                 case "NatureRemoCloud":
                     await NatureRemoCloudApiClient.SendCommandAsync(
-                        command.DeviceId, command.Command, command.CommandType); break;
+                        command.DeviceId, command.Command, command.CommandType,
+                        command.Parameter); break;
                 case "SwitchBotScene":
                     await SwitchBotApiClient.SendSceneAsync(command.DeviceId); break;
                 case "Tuya":
@@ -2582,7 +2774,9 @@ namespace N_Remo
             foreach (ButtonSetting setting in buttons)
             {
                 System.Windows.Controls.Button? button = GetButton(setting.Name);
-                if (button != null)
+                if (button?.Content is DeviceCommandPanel devicePanel)
+                    devicePanel.RefreshStatus();
+                else if (button != null)
                     button.Content = setting.NameContent;
             }
 
@@ -2808,6 +3002,16 @@ namespace N_Remo
                     savedSetting?.NameContent ??
                     button.Content?.ToString() ?? "",
 
+                ItemType = savedSetting?.ItemType ?? "Button",
+                PanelType = savedSetting?.PanelType ?? "",
+                PanelTheme = savedSetting?.PanelTheme ?? "Light",
+                PanelAirPower = savedSetting?.PanelAirPower ?? "on",
+                PanelAirMode = savedSetting?.PanelAirMode ?? "cool",
+                PanelAirTemperature = savedSetting?.PanelAirTemperature is >= 16 and <= 30
+                    ? savedSetting.PanelAirTemperature
+                    : 26,
+                PanelAirFan = savedSetting?.PanelAirFan ?? "",
+
                 Top = top,
                 Left = left,
                 Width = button.Width,
@@ -2899,7 +3103,20 @@ namespace N_Remo
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-            button.Content = setting.NameContent;
+            bool isDevicePanel = string.Equals(
+                setting.ItemType,
+                "DevicePanel",
+                StringComparison.OrdinalIgnoreCase);
+            if (isDevicePanel)
+            {
+                button.Style = TryFindResource("DevicePanelHostStyle") as Style;
+                button.Content = new DeviceCommandPanel(setting);
+            }
+            else
+            {
+                button.Style = TryFindResource("RoundedButtonStyle") as Style;
+                button.Content = setting.NameContent;
+            }
             button.Width = setting.Width;
             button.Height = setting.Height;
             button.FontSize = setting.FontSize;
@@ -2975,6 +3192,12 @@ namespace N_Remo
 
             database.Save(setting);
 
+            // パネルの文字色・背景色は内部の操作画面へ反映する必要があるため、
+            // 保存直後に内容を作り直す。通常ボタンは現在の表示を維持する。
+            if (string.Equals(setting.ItemType, "DevicePanel",
+                StringComparison.OrdinalIgnoreCase))
+                ApplyButtonSetting(setting);
+
             // EditのDataGridへ通知
             NotifyButtonStateChanged(
                 buttonName);
@@ -2993,7 +3216,13 @@ namespace N_Remo
 
             System.Windows.Controls.Button? button = GetButton(buttonName);
             if (button != null)
-                button.Content = displayName;
+            {
+                if (string.Equals(setting.ItemType, "DevicePanel",
+                    StringComparison.OrdinalIgnoreCase))
+                    button.Content = new DeviceCommandPanel(setting);
+                else
+                    button.Content = displayName;
+            }
 
             NotifyButtonStateChanged(buttonName);
         }
@@ -3146,7 +3375,10 @@ namespace N_Remo
             bool importCompleted = false;
             try
             {
-                AppBackupService.Import(sourcePath, database);
+                // ZIP展開、LiteDB検証・置換、ログDBコピーはデータ量に
+                // 比例して時間がかかるため、UIスレッドを占有しない。
+                await Task.Run(() =>
+                    AppBackupService.Import(sourcePath, database));
 
                 Properties.Settings.Default.Reload();
                 ApplyImportedSettings();

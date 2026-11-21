@@ -1,0 +1,80 @@
+<Window x:Class="N_Remo.AirConditionerControlWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="エアコン操作" Width="430" Height="410"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="エアコン" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock x:Name="DeviceNameTextBlock" Margin="0,4,0,0"
+                       Foreground="{StaticResource TextSecondaryBrush}"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="電源" VerticalAlignment="Center"/>
+            <ComboBox x:Name="PowerComboBox" Grid.Column="1" Height="22"
+                      DisplayMemberPath="Display" SelectedValuePath="Value"
+                      SelectionChanged="PowerComboBox_SelectionChanged"/>
+        </Grid>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="モード" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ModeComboBox" Grid.Column="1" Height="22"
+                      DisplayMemberPath="Display" SelectedValuePath="Value"/>
+        </Grid>
+
+        <Grid Grid.Row="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="58"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="温度" VerticalAlignment="Center"/>
+            <Slider x:Name="TemperatureSlider" Grid.Column="1"
+                    Minimum="16" Maximum="30" TickFrequency="1"
+                    IsSnapToTickEnabled="True" Value="26"
+                    ValueChanged="TemperatureSlider_ValueChanged"/>
+            <TextBlock x:Name="TemperatureTextBlock" Grid.Column="2"
+                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Text="26℃"/>
+        </Grid>
+
+        <TextBlock Grid.Row="8" TextWrapping="Wrap"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   Text="風量は自動で送信します。機種が対応していない設定では動作しない場合があります。"/>
+
+        <Grid Grid.Row="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Content="キャンセル" Height="30" IsCancel="True"/>
+            <Button x:Name="SendButton" Grid.Column="2" Content="送信"
+                    Height="30" Click="SendButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>

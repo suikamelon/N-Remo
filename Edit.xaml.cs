@@ -115,6 +115,12 @@ namespace N_Remo
         private bool isUpdatingSensorSettings;
         private bool isUpdatingSensorAssignments;
         private bool isUpdatingSensorLogFilters;
+        // インポート直後に全タブを同期再構築すると、コマンド数や
+        // オートメーション数に比例してUIが長時間停止する。
+        // 未表示の重いタブは、最初に開いた時だけ遅延再読み込みする。
+        private bool pendingImportedCommandsReload;
+        private bool pendingImportedSensorsReload;
+        private bool pendingImportedAutomationsReload;
         private const string GitHubRepositoryUrl =
             "https://github.com/suikamelon/N-Remo";
         private string latestReleaseUrl = GitHubRepositoryUrl + "/releases";
@@ -275,6 +281,7 @@ namespace N_Remo
                 RefreshSwitchBotAssignments();
                 new ButtonDatabase()
                     .SaveSwitchBotCommands(switchBotCommands);
+                mainWindow.RefreshDevicePanelDefinitions(switchBotCommands);
                 RefreshAutomationOptions();
 
                 if (switchBotCommands.Count == 0)
@@ -317,6 +324,15 @@ namespace N_Remo
                 return;
             }
 
+            if (string.Equals(
+                command.CommandType,
+                "aircon-control",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                AirConditionerControlWindow.ShowForCommand(command, this);
+                return;
+            }
+
             try
             {
                 await SendServerCommandAsync(command);
@@ -335,6 +351,201 @@ namespace N_Remo
             }
         }
 
+        private async void BatchRegisterServerCommands_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            List<SwitchBotCommandItem> availableCommands = new();
+            List<string> errors = new();
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(
+                    Properties.Settings.Default.NatureRemoCloudToken))
+                {
+                    try
+                    {
+                        availableCommands.AddRange(await NatureRemoCloudApiClient
+                            .GetSignalCommandsAsync());
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Nature Remo: {ex.Message}");
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(
+                        Properties.Settings.Default.SwitchBotToken) &&
+                    !string.IsNullOrWhiteSpace(
+                        Properties.Settings.Default.SwitchBotSecret))
+                {
+                    try
+                    {
+                        List<SwitchBotDevice> devices =
+                            await SwitchBotApiClient.GetDevicesAsync();
+                        availableCommands.AddRange(
+                            SwitchBotApiClient.GetCommandCatalog(devices));
+                        availableCommands.AddRange(
+                            await SwitchBotApiClient.GetScenesAsync());
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"SwitchBot: {ex.Message}");
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(
+                        Properties.Settings.Default.TuyaAccessId) &&
+                    !string.IsNullOrWhiteSpace(
+                        Properties.Settings.Default.TuyaAccessSecret))
+                {
+                    try
+                    {
+                        availableCommands.AddRange(
+                            await TuyaApiClient.GetCommandsAsync());
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Tuya: {ex.Message}");
+                    }
+                    try
+                    {
+                        availableCommands.AddRange(
+                            await TuyaApiClient.GetScenesAsync());
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Tuyaシーン: {ex.Message}");
+                    }
+                }
+
+                availableCommands = availableCommands
+                    .Where(command => !string.IsNullOrWhiteSpace(command.Id))
+                    .GroupBy(command => command.Id,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group => group.First())
+                    .ToList();
+
+                if (availableCommands.Count == 0)
+                {
+                    System.Windows.MessageBox.Show(
+                        errors.Count > 0
+                            ? string.Join("\n\n", errors)
+                            : LanguageManager.Get(
+                                "取得対象がありません。Nature Remo、SwitchBot、またはTuyaの認証情報を設定してください。"),
+                        LanguageManager.Get("デバイス別コマンド一括登録"),
+                        MessageBoxButton.OK,
+                        errors.Count > 0
+                            ? MessageBoxImage.Warning
+                            : MessageBoxImage.Information);
+                    return;
+                }
+
+                BatchCommandRegistrationWindow dialog = new(availableCommands)
+                {
+                    Owner = this
+                };
+                if (dialog.ShowDialog() != true)
+                    return;
+
+                HashSet<string> existingIds = switchBotCommands
+                    .Select(command => command.Id)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                int added = 0;
+                int skipped = 0;
+                foreach (SwitchBotCommandItem command in dialog.SelectedCommands)
+                {
+                    if (!existingIds.Add(command.Id))
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    switchBotCommands.Add(command);
+                    added++;
+                }
+
+                RefreshSwitchBotAssignments();
+                new ButtonDatabase().SaveSwitchBotCommands(switchBotCommands);
+                mainWindow.RefreshDevicePanelDefinitions(switchBotCommands);
+                RefreshAutomationOptions();
+                DataGridSwitchBotCommands.Items.Refresh();
+
+                string result = string.Format(
+                    LanguageManager.Get("{0}件を登録しました。"), added);
+                if (skipped > 0)
+                {
+                    result += "\n" + string.Format(
+                        LanguageManager.Get("登録済みの{0}件は追加しませんでした。"),
+                        skipped);
+                }
+                if (errors.Count > 0)
+                {
+                    result += "\n\n" +
+                        LanguageManager.Get("一部の提供元から取得できませんでした。") +
+                        "\n" + string.Join("\n\n", errors);
+                }
+                System.Windows.MessageBox.Show(
+                    result,
+                    LanguageManager.Get("デバイス別コマンド一括登録"),
+                    MessageBoxButton.OK,
+                    errors.Count > 0
+                        ? MessageBoxImage.Warning
+                        : MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    ex.Message,
+                    LanguageManager.Get("デバイス別コマンド一括登録"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void AddSelectedDevicePanel_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (DataGridSwitchBotCommands.SelectedItem
+                is not SwitchBotCommandItem command)
+            {
+                System.Windows.MessageBox.Show(
+                    LanguageManager.Get("パネルを追加するデバイスを選択してください。"),
+                    LanguageManager.Get("デバイスパネル"));
+                return;
+            }
+
+            try
+            {
+                ButtonSetting created = mainWindow.AddDevicePanel(command);
+                ButtonSetting? existing = buttonSettings.FirstOrDefault(item =>
+                    string.Equals(item.Name, created.Name,
+                        StringComparison.OrdinalIgnoreCase));
+                if (existing == null)
+                {
+                    buttonSettings.Add(created);
+                    existing = created;
+                }
+                DataGridButtons.SelectedItem = existing;
+                DataGridButtons.ScrollIntoView(existing);
+                System.Windows.MessageBox.Show(
+                    string.Format(
+                        LanguageManager.Get("{0}のデバイスパネルを追加しました。"),
+                        command.DeviceName),
+                    LanguageManager.Get("デバイスパネル"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    ex.Message,
+                    LanguageManager.Get("デバイスパネル"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private static Task SendServerCommandAsync(
             SwitchBotCommandItem command)
         {
@@ -344,7 +555,8 @@ namespace N_Remo
                     NatureRemoCloudApiClient.SendCommandAsync(
                         command.DeviceId,
                         command.Command,
-                        command.CommandType),
+                        command.CommandType,
+                        command.Parameter),
                 "SwitchBotScene" =>
                     SwitchBotApiClient.SendSceneAsync(
                         command.DeviceId),
@@ -1544,6 +1756,7 @@ namespace N_Remo
 
                 UpdateFontWeightToggle(
                     setting.Name);
+                UpdateDevicePanelThemeControls(setting);
             }
             finally
             {
@@ -1900,11 +2113,16 @@ namespace N_Remo
             foreach (AutomationCondition condition in rule.Conditions)
                 PopulateAutomationConditionOptions(condition);
 
-            List<AutomationOption> commandOptions = switchBotCommands.Select(command => new AutomationOption
-            {
-                Value = command.Id,
-                Display = $"{command.SourceDisplayLocalized} / {command.DeviceName} / {command.Description}"
-            }).ToList();
+            List<AutomationOption> commandOptions = switchBotCommands
+                .Where(command => !string.Equals(
+                    command.CommandType,
+                    "aircon-control",
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(command => new AutomationOption
+                {
+                    Value = command.Id,
+                    Display = $"{command.SourceDisplayLocalized} / {command.DeviceName} / {command.Description}"
+                }).ToList();
 
             commandOptions.Insert(0, new AutomationOption
             {
@@ -1932,6 +2150,9 @@ namespace N_Remo
             // Button: プレフィックスでサーバーコマンドのIDと区別する。
             commandOptions.AddRange(new ButtonDatabase().LoadAll()
                 .Where(button => !string.IsNullOrWhiteSpace(button.Name) &&
+                    !string.Equals(button.SwitchBotCommandType,
+                        "aircon-control",
+                        StringComparison.OrdinalIgnoreCase) &&
                     (!string.IsNullOrWhiteSpace(button.Data1) ||
                      string.Equals(button.Provider, "SwitchBot",
                          StringComparison.OrdinalIgnoreCase) ||
@@ -3063,6 +3284,8 @@ namespace N_Remo
             if (!ReferenceEquals(e.OriginalSource, EditTabControl) || !IsLoaded)
                 return;
 
+            ReloadPendingImportedTabData();
+
             if (ReferenceEquals(EditTabControl.SelectedItem, SimpleAutomationTab) &&
                 simpleAutomations.Count > 0)
             {
@@ -3073,6 +3296,37 @@ namespace N_Remo
             else if (ReferenceEquals(EditTabControl.SelectedItem, SensorLogTab))
             {
                 await LoadSensorLogsAsync();
+            }
+        }
+
+        private void ReloadPendingImportedTabData()
+        {
+            if (ReferenceEquals(EditTabControl.SelectedItem, ServerCommandTab) &&
+                pendingImportedCommandsReload)
+            {
+                LoadSwitchBotCommands();
+                pendingImportedCommandsReload = false;
+            }
+            else if (ReferenceEquals(EditTabControl.SelectedItem, ServerSensorTab) &&
+                pendingImportedSensorsReload)
+            {
+                LoadServerSensors();
+                pendingImportedSensorsReload = false;
+            }
+            else if (ReferenceEquals(EditTabControl.SelectedItem, SimpleAutomationTab) &&
+                (pendingImportedCommandsReload || pendingImportedSensorsReload ||
+                 pendingImportedAutomationsReload))
+            {
+                // オートメーションの選択肢はコマンドとセンサーを参照するため、
+                // このタブを開いた場合は依存データを先に一度だけ読み込む。
+                if (pendingImportedCommandsReload)
+                    LoadSwitchBotCommands();
+                if (pendingImportedSensorsReload)
+                    LoadServerSensors();
+                LoadSimpleAutomations();
+                pendingImportedCommandsReload = false;
+                pendingImportedSensorsReload = false;
+                pendingImportedAutomationsReload = false;
             }
         }
 
@@ -3981,11 +4235,19 @@ namespace N_Remo
 
             hostedSettings.SaveHostedSettings();
 
-            new ButtonDatabase()
-                .SaveSwitchBotCommands(switchBotCommands);
+            // インポート後にまだ該当タブを開いていない場合、画面上の
+            // 古いコレクションでインポート済みDBを上書きしない。
+            if (!pendingImportedCommandsReload)
+            {
+                new ButtonDatabase()
+                    .SaveSwitchBotCommands(switchBotCommands);
+            }
 
-            foreach (SimpleAutomationRule rule in simpleAutomations)
-                SaveAutomation(rule);
+            if (!pendingImportedAutomationsReload)
+            {
+                foreach (SimpleAutomationRule rule in simpleAutomations)
+                    SaveAutomation(rule);
+            }
         }
 
         public void ShowSettingsTab()
@@ -4016,6 +4278,12 @@ namespace N_Remo
                 isUpdatingEditor = true;
 
                 LoadDataGrid();
+                LoadServerSensorSettings();
+                LoadWebhookSettings();
+
+                pendingImportedCommandsReload = true;
+                pendingImportedSensorsReload = true;
+                pendingImportedAutomationsReload = true;
 
                 if (DataGridButtons.Items.Count > 0)
                 {
@@ -4073,6 +4341,46 @@ namespace N_Remo
             TextBoxNo.Text = text;
 
             UpdateFontWeightToggle(text);
+            ButtonSetting? setting = buttonSettings.FirstOrDefault(item =>
+                string.Equals(item.Name, text, StringComparison.OrdinalIgnoreCase));
+            if (setting != null)
+                UpdateDevicePanelThemeControls(setting);
+        }
+
+        private void UpdateDevicePanelThemeControls(ButtonSetting setting)
+        {
+            bool isPanel = string.Equals(setting.ItemType, "DevicePanel",
+                StringComparison.OrdinalIgnoreCase);
+            DevicePanelThemeButton.Visibility = isPanel
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            MouseOverEffectButton.Visibility = isPanel
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            DevicePanelThemeButton.Content = string.Equals(
+                setting.PanelTheme,
+                "Dark",
+                StringComparison.OrdinalIgnoreCase)
+                    ? LanguageManager.Get("パネル：ダーク")
+                    : LanguageManager.Get("パネル：ライト");
+        }
+
+        private void DevicePanelThemeButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            if (DataGridButtons.SelectedItem is not ButtonSetting setting ||
+                !string.Equals(setting.ItemType, "DevicePanel",
+                    StringComparison.OrdinalIgnoreCase))
+                return;
+
+            setting.PanelTheme = string.Equals(setting.PanelTheme, "Dark",
+                StringComparison.OrdinalIgnoreCase)
+                    ? "Light"
+                    : "Dark";
+            mainWindow.ApplyAndSaveButtonSetting(setting);
+            DataGridButtons.Items.Refresh();
+            UpdateDevicePanelThemeControls(setting);
         }
 
         // ========================================
@@ -4098,8 +4406,14 @@ namespace N_Remo
             string newContent =
                 TextBoxButtonName.Text;
 
-            // MainWindowへ反映
-            button.Content = TextBoxButtonName.Text;
+            ButtonSetting? selectedSetting = buttonSettings.FirstOrDefault(item =>
+                string.Equals(item.Name, buttonName,
+                    StringComparison.OrdinalIgnoreCase));
+            // デバイスパネルは文字列をContentへ直接代入すると
+            // パネル自体が消えるため、確定時に再描画する。
+            if (!string.Equals(selectedSetting?.ItemType, "DevicePanel",
+                StringComparison.OrdinalIgnoreCase))
+                button.Content = TextBoxButtonName.Text;
         }
 
         // ========================================
@@ -4127,8 +4441,14 @@ namespace N_Remo
             string newContent =
                 TextBoxButtonName.Text;
 
-            button.Content =
-                newContent;
+            bool isDevicePanel = string.Equals(
+                buttonSettings.FirstOrDefault(item => string.Equals(
+                    item.Name, buttonName,
+                    StringComparison.OrdinalIgnoreCase))?.ItemType,
+                "DevicePanel",
+                StringComparison.OrdinalIgnoreCase);
+            if (!isDevicePanel)
+                button.Content = newContent;
 
             ButtonSetting? setting =
                 buttonSettings.FirstOrDefault(x =>

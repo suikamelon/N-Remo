@@ -1,0 +1,84 @@
+<Window x:Class="N_Remo.BatchCommandRegistrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="デバイス別コマンド一括登録"
+        Width="920" Height="650" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="デバイス別コマンド一括登録"
+                       FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Text="提供元とデバイスを選び、登録するコマンドにチェックを付けてください。既に登録されている同一コマンドは重複登録しません。"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="190"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="提供元" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ProviderComboBox" Grid.Column="2" Height="22"
+                      SelectionChanged="Filter_SelectionChanged"/>
+            <TextBlock Grid.Column="4" Text="デバイス" VerticalAlignment="Center"/>
+            <ComboBox x:Name="DeviceComboBox" Grid.Column="6" Height="22"
+                      DisplayMemberPath="Display" SelectedValuePath="Key"
+                      SelectionChanged="Filter_SelectionChanged"/>
+        </Grid>
+
+        <DataGrid x:Name="CommandDataGrid" Grid.Row="4"
+                  AutoGenerateColumns="False" CanUserAddRows="False"
+                  CanUserDeleteRows="False" IsReadOnly="False"
+                  SelectionMode="Extended" RowHeight="28">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="登録" Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
+                <DataGridTextColumn Header="提供元" Binding="{Binding Command.SourceDisplayLocalized}" IsReadOnly="True" Width="135"/>
+                <DataGridTextColumn Header="デバイス名" Binding="{Binding Command.DeviceName}" IsReadOnly="True" Width="170"/>
+                <DataGridTextColumn Header="種類" Binding="{Binding Command.DeviceType}" IsReadOnly="True" Width="110"/>
+                <DataGridTextColumn Header="コマンド" Binding="{Binding Command.Command}" IsReadOnly="True" Width="120"/>
+                <DataGridTextColumn Header="パラメーター" Binding="{Binding Command.Parameter}" IsReadOnly="True" Width="145"/>
+                <DataGridTextColumn Header="説明" Binding="{Binding Command.Description}" IsReadOnly="True" MinWidth="160" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid Grid.Row="6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Content="表示中をすべて選択" Height="28" Padding="14,0"
+                    Click="SelectAll_Click"/>
+            <Button Grid.Column="2" Content="表示中の選択を解除" Height="28" Padding="14,0"
+                    Click="ClearVisibleSelection_Click"/>
+            <TextBlock x:Name="SelectionCountTextBlock" Grid.Column="4"
+                       VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}"/>
+            <Button Grid.Column="5" Content="キャンセル" Height="28" Padding="18,0"
+                    IsCancel="True"/>
+            <Button Grid.Column="7" Content="選択したコマンドを登録" Height="28" Padding="18,0"
+                    Click="Register_Click"/>
+        </Grid>
+    </Grid>
+</Window>
