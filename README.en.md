@@ -4,6 +4,8 @@
 
 N-Remo is an unofficial WPF application for controlling Nature Remo, SwitchBot, and Tuya devices from Windows. It provides freely configurable buttons, cloud commands, sensor displays, logs, and simple automations in one application.
 
+[View application screenshots](screenshots/)
+
 > [!IMPORTANT]
 > N-Remo is not an official application of Nature Inc., SWITCHBOT Inc., or Tuya Inc. All service names, product names, and trademarks belong to their respective owners.
 
